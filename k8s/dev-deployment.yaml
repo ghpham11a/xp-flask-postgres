@@ -1,0 +1,75 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: xp-micro-flask-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: xp-micro-flask
+  template:
+    metadata:
+      labels:
+        app: xp-micro-flask
+    spec:
+      containers:
+      - name: xp-micro-flask
+        image: xp-micro-flask:latest
+        imagePullPolicy: Never 
+        ports:
+        - containerPort: 80
+        env:
+        - name: POSTGRES_HOST
+          valueFrom:
+            secretKeyRef:
+              name: dev-secrets
+              key: POSTGRES_HOST
+        - name: POSTGRES_DATABASE
+          valueFrom:
+            secretKeyRef:
+              name: dev-secrets
+              key: POSTGRES_DATABASE
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: dev-secrets
+              key: POSTGRES_USER
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: dev-secrets
+              key: POSTGRES_PASSWORD
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: xp-micro-flask-redis
+              key: redis-password
+        - name: REDIS_HOST
+          valueFrom:
+            secretKeyRef:
+              name: dev-secrets
+              key: REDIS_HOST
+        - name: REDIS_PORT
+          valueFrom:
+            secretKeyRef:
+              name: dev-secrets
+              key: REDIS_PORT
+        - name: KAFKA_BOOTSTRAP_SERVERS
+          valueFrom:
+            secretKeyRef:
+              name: dev-secrets
+              key: KAFKA_BOOTSTRAP_SERVERS
+        - name: KAFKA_SASL_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: dev-secrets
+              key: KAFKA_SASL_USERNAME
+        - name: KAFKA_SASL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: xp-micro-flask-kafka-user-passwords
+              key: client-passwords
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name

@@ -1,0 +1,16 @@
+primary:
+  persistence:
+    size: 8Gi
+    enabled: true
+    deleteClaim: true
+  resources:
+    limits:
+      memory: 512Mi
+      cpu: 500m
+  podLabels:
+    app: xp-micro-flask-postgres
+
+auth:
+  username: postgres
+  password: postgres
+  database: postgres
