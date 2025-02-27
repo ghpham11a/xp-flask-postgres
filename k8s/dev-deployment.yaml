@@ -1,20 +1,20 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: xp-micro-flask-deployment
+  name: xp-flask-postgres-deployment
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: xp-micro-flask
+      app: xp-flask-postgres
   template:
     metadata:
       labels:
-        app: xp-micro-flask
+        app: xp-flask-postgres
     spec:
       containers:
-      - name: xp-micro-flask
-        image: xp-micro-flask:latest
+      - name: xp-flask-postgres
+        image: xp-flask-postgres:latest
         imagePullPolicy: Never 
         ports:
         - containerPort: 80
@@ -22,52 +22,52 @@ spec:
         - name: POSTGRES_HOST
           valueFrom:
             secretKeyRef:
-              name: dev-secrets
+              name: xp-flask-postgres-secrets
               key: POSTGRES_HOST
         - name: POSTGRES_DATABASE
           valueFrom:
             secretKeyRef:
-              name: dev-secrets
+              name: xp-flask-postgres-secrets
               key: POSTGRES_DATABASE
         - name: POSTGRES_USER
           valueFrom:
             secretKeyRef:
-              name: dev-secrets
+              name: xp-flask-postgres-secrets
               key: POSTGRES_USER
         - name: POSTGRES_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: dev-secrets
+              name: xp-flask-postgres-secrets
               key: POSTGRES_PASSWORD
         - name: REDIS_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: xp-micro-flask-redis
+              name: xp-flask-postgres-redis
               key: redis-password
         - name: REDIS_HOST
           valueFrom:
             secretKeyRef:
-              name: dev-secrets
+              name: xp-flask-postgres-secrets
               key: REDIS_HOST
         - name: REDIS_PORT
           valueFrom:
             secretKeyRef:
-              name: dev-secrets
+              name: xp-flask-postgres-secrets
               key: REDIS_PORT
         - name: KAFKA_BOOTSTRAP_SERVERS
           valueFrom:
             secretKeyRef:
-              name: dev-secrets
+              name: xp-flask-postgres-secrets
               key: KAFKA_BOOTSTRAP_SERVERS
         - name: KAFKA_SASL_USERNAME
           valueFrom:
             secretKeyRef:
-              name: dev-secrets
+              name: xp-flask-postgres-secrets
               key: KAFKA_SASL_USERNAME
         - name: KAFKA_SASL_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: xp-micro-flask-kafka-user-passwords
+              name: xp-flask-postgres-kafka-user-passwords
               key: client-passwords
         - name: POD_NAME
           valueFrom:

@@ -13,4 +13,4 @@ spec:
         echo "security.protocol=SASL_PLAINTEXT" > /tmp/kafka-client.properties &&
         echo "sasl.mechanism=PLAIN" >> /tmp/kafka-client.properties &&
         echo "sasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required username=\"user1\" password=\"zRycaPH3fQ\";" >> /tmp/kafka-client.properties &&
-        kafka-topics.sh --create --topic orders --partitions 3 --replication-factor 3 --bootstrap-server xp-micro-flask-kafka.default.svc.cluster.local:9092 --command-config /tmp/kafka-client.properties
+        kafka-topics.sh --create --topic orders --partitions 3 --replication-factor 3 --bootstrap-server xp-flask-postgres-kafka.default.svc.cluster.local:9092 --command-config /tmp/kafka-client.properties

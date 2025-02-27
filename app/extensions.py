@@ -128,7 +128,7 @@ def init_kafka_consumer(app):
     """
     conf = {
         "bootstrap.servers": app.config["KAFKA_BOOTSTRAP_SERVERS"],
-        "group.id": "xp-micro-flask-test-consumer-group",
+        "group.id": "xp-flask-postgres-test-consumer-group",
         "auto.offset.reset": "earliest",
         "security.protocol": "SASL_PLAINTEXT",
         "sasl.mechanisms": "PLAIN",
