@@ -14,3 +14,6 @@ class Config:
     KAFKA_BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
     KAFKA_SASL_USERNAME = os.getenv("KAFKA_SASL_USERNAME", "user1")
     KAFKA_SASL_PASSWORD = os.getenv("KAFKA_SASL_PASSWORD", "defautpass")
+
+    HEC_URL = os.getenv("HEC_URL", "")
+    HEC_TOKEN = os.getenv("HEC_TOKEN", "")

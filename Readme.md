@@ -63,10 +63,10 @@ Charts from Bitnami is needed for Neo4j
 helm repo add bitnami https://charts.bitnami.com/bitnami
 ```
 
-This repo from Splunk will give us the Splunk operator
+This repo from Splunk will give us the Splunk OpenTelemetry Collector
 
 ```sh
-helm repo add splunk https://splunk.github.io/splunk-operator/
+helm repo add splunk-otel-collector-chart https://signalfx.github.io/splunk-otel-collector-chart
 ```
 
 Run this command to make sure Helm is using the most up to date resources
@@ -180,6 +180,19 @@ kubectl exec --tty -i redis-client --namespace default -- bash
 redis-cli -h xp-flask-postgres-redis-master -p 6379
 
 AUTH [REDIS_PASSWORD]
+```
+
+# 5. Setup Splunk
+
+Set Secrets and then config for Splunk
+
+```sh
+kubectl apply -f dev-splunk-secrets.yaml
+kubectl apply -f dev-splunk-config.yaml
+```
+
+```sh
+helm install xp-splunk-otel-collector --values dev-splunk-config.yaml splunk-otel-collector-chart/splunk-otel-collector
 ```
 
 # 4. Setup up application in k8s

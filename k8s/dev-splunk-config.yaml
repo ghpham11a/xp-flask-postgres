@@ -1,0 +1,7 @@
+clusterName: "dev-cluster"
+splunkPlatform:
+  endpoint: http://host.docker.internal:8088/services/collector/raw
+
+secret:
+  create: false
+  name: "xp-splunk-secrets"
