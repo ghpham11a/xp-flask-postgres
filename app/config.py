@@ -9,6 +9,7 @@ class Config:
 
     REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
     REDIS_PORT = os.getenv("REDIS_PORT", 6379)
+    REDIS_PASSWORD = os.getenv("REDIS_PASSWORD", "password")
 
     KAFKA_BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
     KAFKA_SASL_USERNAME = os.getenv("KAFKA_SASL_USERNAME", "user1")

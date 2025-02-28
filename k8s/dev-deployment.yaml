@@ -18,12 +18,10 @@ spec:
         imagePullPolicy: Never 
         ports:
         - containerPort: 80
+        envFrom:
+          - configMapRef:
+              name: xp-flask-postgres-configmap
         env:
-        - name: POSTGRES_HOST
-          valueFrom:
-            secretKeyRef:
-              name: xp-flask-postgres-secrets
-              key: POSTGRES_HOST
         - name: POSTGRES_DATABASE
           valueFrom:
             secretKeyRef:
@@ -39,35 +37,22 @@ spec:
             secretKeyRef:
               name: xp-flask-postgres-secrets
               key: POSTGRES_PASSWORD
+        # This given to us from Helm chart
         - name: REDIS_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: xp-flask-postgres-redis
+              name: xp-redis
               key: redis-password
-        - name: REDIS_HOST
-          valueFrom:
-            secretKeyRef:
-              name: xp-flask-postgres-secrets
-              key: REDIS_HOST
-        - name: REDIS_PORT
-          valueFrom:
-            secretKeyRef:
-              name: xp-flask-postgres-secrets
-              key: REDIS_PORT
-        - name: KAFKA_BOOTSTRAP_SERVERS
-          valueFrom:
-            secretKeyRef:
-              name: xp-flask-postgres-secrets
-              key: KAFKA_BOOTSTRAP_SERVERS
         - name: KAFKA_SASL_USERNAME
           valueFrom:
             secretKeyRef:
               name: xp-flask-postgres-secrets
               key: KAFKA_SASL_USERNAME
+        # This given to us from Helm chart
         - name: KAFKA_SASL_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: xp-flask-postgres-kafka-user-passwords
+              name: xp-kafka-user-passwords
               key: client-passwords
         - name: POD_NAME
           valueFrom:

@@ -44,7 +44,7 @@ def init_redis(app):
     # Pull redis configuration from your app config or environment variables
     redis_host = app.config["REDIS_HOST"]
     redis_port =  int(app.config["REDIS_PORT"])
-    redis_password = os.getenv("REDIS_PASSWORD")
+    redis_password = app.config["REDIS_PASSWORD"]
     redis_client = redis.Redis(
         host=redis_host, 
         port=redis_port, 

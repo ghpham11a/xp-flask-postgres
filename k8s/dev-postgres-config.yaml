@@ -8,9 +8,9 @@ primary:
       memory: 512Mi
       cpu: 500m
   podLabels:
-    app: xp-flask-postgres-postgres
+    app: xp-postgres
 
 auth:
-  username: postgres
-  password: postgres
-  database: postgres
+  username: postgres-username
+  password: postgres-password
+  database: postgres-database

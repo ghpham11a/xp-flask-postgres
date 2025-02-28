@@ -1,103 +1,179 @@
 # Commands
 
-### Running locally
+
+###### Other useful commands during development
 
 ```sh
+# Run your non-containerized application
 flask --app app run --debug
+
+# Run the docker container locally
+docker run -p 80:80 xp-flask-postgres
+
+# List running containers
+docker ps
+
+# Stop this container
+docker stop <container_id_or_name>
+
+# Encode string value in Powershell
+[Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes('secret-value'))
+
+# Decode string value in Powershell
+[System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String('encoded-value'))
+
+# List running Kubernetes pods
+kubectl get pods
+
+# Inspect pod logs
+kubectl describe pod <pod-name>
+
+# List databases in psql
+postgres=# \l
+
+# List tables in database in psql
+postgres=# \dt
+
+# Connect to database in psql
+postgres=# \c [DBNAME]
+
+# Exit psql
+postgres=# \dt
 ```
 
-### Freeze requirements
+###### 1. Containerize the application
+
+Ensure the requirements.txt file is up to date and that it is in the root directory
 
 ```sh
 pip freeze > requirements.txt
 ```
 
-### Build Docker image
+Run this in the same folder where the Dockerfile is
 
 ```sh
 docker build -t xp-flask-postgres .
 ```
 
-### Run the Docker container
+###### 2. Add Helm repositories
+
+Charts from Bitnami is needed for Neo4j
 
 ```sh
-docker run -p 80:80 xp-flask-postgres
+helm repo add bitnami https://charts.bitnami.com/bitnami
 ```
 
-### List running containers
+This repo from Splunk will give us the Splunk operator
 
 ```sh
-docker ps
+helm repo add splunk https://splunk.github.io/splunk-operator/
 ```
 
-### Stop container
-
-```sh
-docker stop <container_id_or_name>
-```
-
-### Apply Kubernetes resources (inside k8s)
-
-```sh
-kubectl apply -f dev-deployment.yaml
-kubectl apply -f dev-service.yaml
-kubectl apply -f dev-secrets.yaml
-```
-
-### List running Kubernetes pods
-
-```sh
-kubectl get pods
-```
-
-### Inspect pod logs
-
-```sh
-kubectl describe pod <pod-name>
-```
-
-### Delete resoruces
-
-```sh
-kubectl delete service xp-flask-postgres-service
-kubectl delete deployment xp-flask-postgres-deployment
-kubectl delete secrets xp-flask-postgres-secrets
-kubectl delete pvc data-xp-flask-postgres-postgres-postgresql-0
-kubectl delete pod redis-client
-```
-
-### Update Helm charts
+Run this command to make sure Helm is using the most up to date resources
 
 ```sh
 helm repo update
 ```
 
-### Install PostgreSQL, Kafka, Redis Helm chart with custom values
+###### 3. Setup PostgreSQL
+
+Setup PostgreSQL containers using values from dev-postgres-values.yaml. This is in the k8s folder.
 
 ```sh
-helm install xp-flask-postgres-postgres -f dev-postgres-values.yaml bitnami/postgresql
-helm install xp-flask-postgres-kafka oci://registry-1.docker.io/bitnamicharts/kafka
-helm install xp-flask-postgres-redis oci://registry-1.docker.io/bitnamicharts/redis
+helm install xp-postgres -f dev-postgres-config.yaml bitnami/postgresql
 ```
 
+Connect to the PostgreSQL in the container via psql. First set the password.
+
 ```sh
-helm upgrade --install xp-flask-postgres-kafka oci://registry-1.docker.io/bitnamicharts/kafka --set auth.clientProtocol=sasl --set auth.saslMechanism=scram-sha-256 --set autoCreateTopics.enable=true
+# set admin password with Powershell
+$POSTGRES_PASSWORD = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String((kubectl get secret --namespace default xp-postgres-postgresql -o jsonpath="{.data.postgres-password}")))
+
+# set admin password in bash
+secret=$(kubectl get secret --namespace default xp-flask-postgres-postgres-postgresql -o jsonpath="{.data.postgres-password}")
+
+POSTGRES_PASSWORD=$(echo "$secret" | base64 --decode)
 ```
 
-### Delete Helm charts
+Using the password from above, get into the container and launch psql
 
 ```sh
-helm uninstall xp-flask-postgres-postgres
-helm uninstall xp-flask-postgres-kafka
-helm uninstall xp-flask-postgres-redis
+kubectl run xp-postgres-postgresql-client --rm --tty -i --restart='Never' --namespace default --image docker.io/bitnami/postgresql:17.0.0-debian-12-r6 --env="PGPASSWORD=$POSTGRES_PASSWORD" --command -- psql --host xp-postgres-postgresql -U postgres -d postgres -p 5432
 ```
 
-### Connect to redis in Powershell
+Create the table
 
 ```sh
+postgres=# CREATE TABLE orders (id SERIAL PRIMARY KEY, title TEXT NOT NULL, description TEXT NOT NULL);
+```
+
+To check that it was created successfully
+
+```sh
+postgres=# \dt
+```
+
+Quit psql
+
+```sh
+postgres=# \q
+```
+
+###### 3. Setup Kafka
+
+Install Kafka Helm chart
+
+```sh
+helm install xp-kafka oci://registry-1.docker.io/bitnamicharts/kafka
+```
+
+To check that pods were spun up
+
+```sh
+kubectl get pods --selector app.kubernetes.io/instance=xp-kafka
+```
+
+To create the topics, we will start another pod that goes into the Kafka pods and creates the topics and shuts down. To do this, we need to find the Kafka password and update it's value in the dev-kafka-topics-admin.yaml. 
+
+```sh
+# This gets an encoded value
+kubectl get secret xp-kafka-user-passwords -o jsonpath='{.data.client-passwords}'
+
+# we need the decoded version to put into the yaml
+# Powershell
+[System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String((kubectl get secret xp-kafka-user-passwords -o jsonpath='{.data.client-passwords}')))
+
+# bash
+kubectl get secret xp-flask-postgres-kafka-user-passwords -o jsonpath='{.data.client-passwords}' | base64 -d
+```
+
+Get the password and update the password field in dev-kafka-topics-admin.yaml
+
+```
+... required username=\"user1\" password=\"zRycaPH3fQ\";" >> /tmp/kafka-client.properties ...
+```
+
+Then just run this command which applies the yaml updates
+
+```sh
+kubectl apply -f dev-kafka-topics-admin.yaml
+```
+
+###### 3. Setup Redis
+
+Install Redis Helm chart
+
+```sh
+helm install xp-redis oci://registry-1.docker.io/bitnamicharts/redis
+```
+
+Optional: connect to Redis
+
+```sh
+# Store the password in Powershell
 $REDIS_PASSWORD = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String((kubectl get secret --namespace default xp-flask-postgres-redis -o jsonpath="{.data.redis-password}")))
 
-kubectl run --namespace default redis-client --restart='Never'  --env REDIS_PASSWORD=$REDIS_PASSWORD  --image docker.io/bitnami/redis:7.4.2-debian-12-r4 --command -- sleep infinity
+kubectl run --namespace default redis-client --restart='Never' --env REDIS_PASSWORD=$REDIS_PASSWORD  --image docker.io/bitnami/redis:7.4.2-debian-12-r4 --command -- sleep infinity
 
 kubectl exec --tty -i redis-client --namespace default -- bash
 
@@ -106,98 +182,30 @@ redis-cli -h xp-flask-postgres-redis-master -p 6379
 AUTH [REDIS_PASSWORD]
 ```
 
-### Connect to psql in Powershell
+# 4. Setup up application in k8s
+
+Setup service to allow outside communication
 
 ```sh
-$POSTGRES_PASSWORD = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String((kubectl get secret --namespace default xp-flask-postgres-postgres-postgresql -o jsonpath="{.data.postgres-password}")))
-
-kubectl run xp-flask-postgres-postgres-postgresql-client --rm --tty -i --restart='Never' --namespace default --image docker.io/bitnami/postgresql:17.0.0-debian-12-r6 --env="PGPASSWORD=$POSTGRES_PASSWORD" --command -- psql --host xp-flask-postgres-postgres-postgresql -U postgres -d postgres -p 5432
+kubectl apply -f dev-service.yaml
 ```
 
-### Connect to psql in bash
+Setup configuration which will be used my application pods
 
 ```sh
-secret=$(kubectl get secret --namespace default xp-flask-postgres-postgres-postgresql -o jsonpath="{.data.postgres-password}")
-
-POSTGRES_PASSWORD=$(echo "$secret" | base64 --decode)
-
-kubectl run -i --tty temp-psql-client --rm --restart='Never' \
-  --image docker.io/bitnami/postgresql:17.0.0-debian-12-r6 \
-  --env="PGPASSWORD=$POSTGRES_PASSWORD" \
-  --command -- psql --host xp-flask-postgres-postgres-postgresql -U postgres -d postgres -p 5432
+kubectl apply -f dev-configmap.yaml
 ```
 
-### Get Kafka password 
+Setup secrets which will be used my application pods
 
 ```sh
-# bash
-kubectl get secret xp-flask-postgres-kafka-user-passwords -o jsonpath='{.data.client-passwords}' | base64 -d
+kubectl apply -f dev-secrets.yaml
 ```
 
-### List topics on broker
+Setup deployment which is responsible for creating objects and manage the pods
 
 ```sh
-kafka-topics.sh --list --bootstrap-server xp-flask-postgres-kafka.default.svc.cluster.local:9092 --command-config /tmp/kafka-client.properties
-```
-
-### Creating a topic in Kafka
-
-```sh
-kubectl get pods --selector app.kubernetes.io/instance=xp-flask-postgres-kafka
-```
-
-```sh
-kubectl exec -it xp-flask-postgres-kafka-controller-0 -- bash
-```
-
-```sh
-kubectl exec -it xp-flask-postgres-kafka-controller-0 -- kafka-topics.sh --list --bootstrap-server xp-flask-postgres-kafka.default.svc.cluster.local:9092 --command-config /tmp/kafka-client.properties
-```
-
-```sh
-kafka-topics.sh \
-  --create \
-  --topic orders \
-  --partitions 3 \
-  --replication-factor 3 \
-  --bootstrap-server xp-flask-postgres-kafka.default.svc.cluster.local:9092 \
-  --command-config /tmp/kafka-client.properties
-```
-
-### Encode secret in PowerShell for k8s secrets
-
-```sh
-[Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes('secret-value'))
-```
-
-### Decode secret in Powershell
-
-```sh
-[System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String('encoded-value'))
-```
-
-### Create table in psql
-
-```sh
-CREATE TABLE orders (id SERIAL PRIMARY KEY, title TEXT NOT NULL, description TEXT NOT NULL);
-```
-
-### list databases psql
-
-```sh
-\l
-```
-
-### Connect to database in psql
-
-```sh
-\c [DBNAME]
-```
-
-### Exit psql
-
-```sh
-\q
+kubectl apply -f dev-deployment.yaml
 ```
 
 # Endpoints
